@@ -1,0 +1,52 @@
+import {Injectable} from '@angular/core';
+import { AngularFireAuth } from '@angular/fire/auth';
+import { auth } from 'firebase/app';
+
+//libreria para trabajar con observables los cuales son una forma de manejar asincronismo en javascript
+import {Observable} from 'rxjs';
+import {filter, map, take} from 'rxjs/operators';
+
+import { IUser } from '../structures/users';
+import 'firebase/auth';
+
+import { UserServices } from './user.services';
+
+
+
+
+
+@Injectable()
+
+
+export class AuthServices { 
+    
+    constructor(private afAuth: AngularFireAuth, private userServices: UserServices) {}
+
+    getUser(): Observable<IUser> {
+
+        return this.afAuth.authState.pipe(
+            take(1),
+            filter(user => !!user), // Filtra los valores nulos o indefinidos
+            map(user => user as IUser)
+        );
+    }
+
+
+
+    
+    login(): Promise<void> {
+        return this.afAuth.auth.signInWithPopup(new auth.GoogleAuthProvider())
+        .then((result: any) => {
+            const user = result && result.user ? result.user : null;
+            return this.userServices.add({
+                uid: user ? user.uid : '',
+                name: user ? user.displayName : '',
+            }).then(() => {
+                console.log('User added successfully');
+            });
+        }).catch((error) => {
+            console.error('Error during login:', error);
+            return Promise.resolve();
+        });
+    }
+}
